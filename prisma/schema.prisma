@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 管理员表
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // 注意：实际存储时需要加密
+  name      String
+  phone     String?
+  role      Role     @default(STAFF)
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// 租户信息表
+model Tenant {
+  id               Int        @id @default(autoincrement())
+  name             String
+  phone            String
+  idCard           String     @unique
+  email            String?
+  emergencyContact String?
+  emergencyPhone   String?
+  status           Status     @default(ACTIVE)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  contracts        Contract[]
+  bills           Bill[]
+
+  @@map("tenants")
+}
+
+// 房源表
+model Room {
+  id          Int        @id @default(autoincrement())
+  number      String     @unique
+  floor       Int
+  building    String
+  type        RoomType
+  area        Float
+  direction   Direction
+  facilities  Json       // 存储设施配置列表
+  price       Decimal    @db.Decimal(10, 2)
+  deposit     Decimal    @db.Decimal(10, 2)
+  status      RoomStatus @default(VACANT)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  contracts   Contract[]
+
+  @@map("rooms")
+}
+
+// 租约表
+model Contract {
+  id            Int       @id @default(autoincrement())
+  tenantId      Int
+  roomId        Int
+  startDate     DateTime
+  endDate       DateTime
+  monthlyRent   Decimal   @db.Decimal(10, 2)
+  deposit       Decimal   @db.Decimal(10, 2)
+  status        ContractStatus @default(ACTIVE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  room          Room      @relation(fields: [roomId], references: [id])
+  bills         Bill[]
+
+  @@map("contracts")
+}
+
+// 账单表
+model Bill {
+  id          Int       @id @default(autoincrement())
+  contractId  Int
+  tenantId    Int
+  type        BillType
+  amount      Decimal   @db.Decimal(10, 2)
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      BillStatus @default(UNPAID)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  contract    Contract  @relation(fields: [contractId], references: [id])
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  transaction Transaction?
+
+  @@map("bills")
+}
+
+// 收支记录表
+model Transaction {
+  id          Int       @id @default(autoincrement())
+  billId      Int       @unique
+  amount      Decimal   @db.Decimal(10, 2)
+  type        TransactionType
+  method      PaymentMethod
+  status      TransactionStatus @default(PENDING)
+  paidAt      DateTime?
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bill        Bill      @relation(fields: [billId], references: [id])
+
+  @@map("transactions")
+}
+
+// 枚举类型定义
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum RoomType {
+  SINGLE
+  DOUBLE
+  TRIPLE
+  SUITE
+}
+
+enum Direction {
+  EAST
+  SOUTH
+  WEST
+  NORTH
+  SOUTHEAST
+  SOUTHWEST
+  NORTHEAST
+  NORTHWEST
+}
+
+enum RoomStatus {
+  VACANT      // 空置
+  OCCUPIED    // 已租
+  RESERVED    // 已预订
+  MAINTAINING // 维修中
+}
+
+enum ContractStatus {
+  ACTIVE      // 生效中
+  EXPIRED     // 已过期
+  TERMINATED  // 已终止
+  PENDING     // 待生效
+}
+
+enum BillType {
+  RENT        // 房租
+  WATER       // 水费
+  ELECTRICITY // 电费
+  GAS         // 燃气费
+  PROPERTY    // 物业费
+  OTHER       // 其他
+}
+
+enum BillStatus {
+  UNPAID      // 未支付
+  PAID        // 已支付
+  OVERDUE     // 已逾期
+  CANCELLED   // 已取消
+}
+
+enum TransactionType {
+  INCOME      // 收入
+  EXPENSE     // 支出
+}
+
+enum PaymentMethod {
+  CASH        // 现金
+  WECHAT      // 微信
+  ALIPAY      // 支付宝
+  BANK        // 银行转账
+  OTHER       // 其他
+}
+
+enum TransactionStatus {
+  PENDING     // 待处理
+  COMPLETED   // 已完成
+  FAILED      // 失败
+  REFUNDED    // 已退款
+} 
