@@ -31,11 +31,12 @@ model Tenant {
   email            String?
   emergencyContact String?
   emergencyPhone   String?
+  gender           Gender?
   status           Status     @default(ACTIVE)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   contracts        Contract[]
-  bills           Bill[]
+  bills            Bill[]
 
   @@map("tenants")
 }
@@ -62,19 +63,20 @@ model Room {
 
 // 租约表
 model Contract {
-  id            Int       @id @default(autoincrement())
-  tenantId      Int
-  roomId        Int
-  startDate     DateTime
-  endDate       DateTime
-  monthlyRent   Decimal   @db.Decimal(10, 2)
-  deposit       Decimal   @db.Decimal(10, 2)
-  status        ContractStatus @default(ACTIVE)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  room          Room      @relation(fields: [roomId], references: [id])
-  bills         Bill[]
+  id          Int             @id @default(autoincrement())
+  tenantId    Int      
+  roomId      Int      
+  startDate   DateTime 
+  endDate     DateTime 
+  rentAmount  Decimal         @db.Decimal(10, 2)
+  deposit     Decimal         @db.Decimal(10, 2)
+  status      ContractStatus  @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  room        Room            @relation(fields: [roomId], references: [id])
+  bills       Bill[]
 
   @@map("contracts")
 }
@@ -192,4 +194,9 @@ enum TransactionStatus {
   COMPLETED   // 已完成
   FAILED      // 失败
   REFUNDED    // 已退款
+}
+
+enum Gender {
+  MALE
+  FEMALE
 } 

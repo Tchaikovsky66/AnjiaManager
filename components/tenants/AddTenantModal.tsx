@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Form, Input, message } from 'antd';
+import { Modal, Form, Input, message, Select } from 'antd';
 import { useState } from 'react';
 
 interface Props {
@@ -18,10 +18,15 @@ export default function AddTenantModal({ open, onCancel, onSuccess }: Props) {
             setLoading(true);
             const values = await form.validateFields();
 
-            // 过滤掉空值
-            const cleanValues = Object.fromEntries(
-                Object.entries(values).filter(([_, v]) => v !== undefined && v !== '')
-            );
+            const cleanValues = {
+                ...values,
+                gender: values.gender || null,
+                email: values.email || null,
+                emergencyContact: values.emergencyContact || null,
+                emergencyPhone: values.emergencyPhone || null,
+            };
+
+            console.log('Submitting tenant data:', cleanValues);
 
             const response = await fetch('/api/tenants', {
                 method: 'POST',
@@ -34,12 +39,13 @@ export default function AddTenantModal({ open, onCancel, onSuccess }: Props) {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || '添加租户失败');
+                throw new Error(data.error || data.message || '添加租户失败');
             }
 
             form.resetFields();
             onSuccess();
         } catch (error) {
+            console.error('Submit error:', error);
             if (error instanceof Error) {
                 message.error(error.message);
             } else {
@@ -113,6 +119,20 @@ export default function AddTenantModal({ open, onCancel, onSuccess }: Props) {
                     rules={[{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' }]}
                 >
                     <Input />
+                </Form.Item>
+
+                <Form.Item
+                    label="性别"
+                    name="gender"
+                >
+                    <Select
+                        placeholder="请选择性别"
+                        allowClear
+                        options={[
+                            { label: '男', value: 'MALE' },
+                            { label: '女', value: 'FEMALE' },
+                        ]}
+                    />
                 </Form.Item>
             </Form>
         </Modal>
